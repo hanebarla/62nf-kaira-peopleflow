@@ -11,7 +11,8 @@ import torch
 import torch.nn.functional as F
 import torchvision
 from matplotlib import cm
-import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_agg import FigureCanvas
 from matplotlib.colors import Normalize
 
 
@@ -33,15 +34,17 @@ input_img = {
     'second': torch.zeros((3, 360, 640))
 }
 
-fig, ax = plt.subplots()
-norm = Normalize()
 plotcm = cm.Reds
+norm = Normalize()
 
 
 def quiver2img(qv):
+    fig = Figure(dpi=100)
+    canvas = FigureCanvas(fig)
+    ax = fig.subplots()
     colors = np.sqrt(qv[2]*qv[2] + qv[3]*qv[3])
     v_length = colors.copy()
-    norm().autoscale(colors)
+    norm.autoscale(colors)
     ax.quiver(qv[0],
               qv[1],
               qv[2] / v_length,
@@ -54,9 +57,10 @@ def quiver2img(qv):
     ax.set_xlim(0, 80)
     ax.set_aspect('equal')
 
-    fig.canvas.draw()
+    canvas.draw()
     im = np.array(fig.canvas.renderer.buffer_rgba())
     im = cv2.cvtColor(im, cv2.COLOR_RGBA2BGR)
+
     return im
 
 
@@ -89,7 +93,7 @@ def run(img_str):
     input_img['first'] = input_img['second']
 
     # encode to string
-    _, encimg = cv2.imencode(".jpg", pred_dense, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
+    _, encimg = cv2.imencode(".jpg", quiver_img, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
     img_str = encimg.tostring()
     img_str = "data:image/jpeg;base64," + base64.b64encode(img_str).decode('utf-8')
     return IPython.display.JSON({'img_str': img_str})
