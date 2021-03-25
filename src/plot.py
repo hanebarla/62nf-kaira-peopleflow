@@ -12,6 +12,7 @@ import torch.nn.functional as F
 import torchvision
 from matplotlib import cm
 import matplotlib.pyplot as plt
+from matplotlib.colors import Normalize
 
 
 transform = torchvision.transforms.Compose([
@@ -31,6 +32,32 @@ input_img = {
     'first': torch.zeros((3, 360, 640)),
     'second': torch.zeros((3, 360, 640))
 }
+
+fig, ax = plt.subplots()
+norm = Normalize()
+plotcm = cm.Reds
+
+
+def quiver2img(qv):
+    colors = np.sqrt(qv[2]*qv[2] + qv[3]*qv[3])
+    v_length = colors.copy()
+    norm().autoscale(colors)
+    ax.quiver(qv[0],
+              qv[1],
+              qv[2] / v_length,
+              qv[3] / v_length,
+              color=plotcm(norm(colors)),
+              angles='xy', scale_units='xy', scale=1,
+              headlength=1.2, headaxislength=1.08,
+              pivot='mid')
+    ax.set_ylim(0, 45)
+    ax.set_xlim(0, 80)
+    ax.set_aspect('equal')
+
+    fig.canvas.draw()
+    im = np.array(fig.canvas.renderer.buffer_rgba())
+    im = cv2.cvtColor(im, cv2.COLOR_RGBA2BGR)
+    return im
 
 
 def run(img_str):
@@ -52,6 +79,7 @@ def run(img_str):
 
     pred_num = pred[0, :, :, :].detach().cpu().numpy()
     pred_quiver = NormalizeQuiver(pred_num)
+    quiver_img = quiver2img(pred_quiver)
     pred_num = pred_num.transpose((1, 2, 0))
     pred_dense = tm_output_to_dense(pred_num)
 
