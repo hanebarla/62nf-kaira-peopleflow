@@ -36,6 +36,7 @@ def run(img_str):
     decimg = cv2.cvtColor(decimg, cv2.COLOR_BGR2RGB)
     h, w, c = decimg.shape
     decimg = decimg[(int(h/2)-180):(int(h/2)+180), (int(w/2)-320):(int(w/2)+320)]
+    """
     input_img['second'] = transform(decimg)
 
     with torch.no_grad():
@@ -61,6 +62,8 @@ def run(img_str):
     plot_img[:, :, 0] = cmdense[:, :, 2]
     plot_img[:, :, 2] = cmdense[:, :, 0]
     plot_img *= 255
+    """
+    plot_img = np.pad(decimg, (h-decimg.shape[0], w-decimg.shape[1]), 'constant')
 
     # fig, ax = plt.subplots()
 
