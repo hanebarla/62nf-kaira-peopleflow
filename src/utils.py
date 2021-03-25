@@ -92,7 +92,7 @@ ChannelToLocation = ['aboveleft', 'above', 'aboveright',
                      'belowleft', 'below', 'belowright']
 
 
-def output_to_img(output):
+def NormalizeQuiver(output):
     output_num = output
 
     o_max = np.max(output_num)
@@ -103,30 +103,30 @@ def output_to_img(output):
         out = output_num[i, :, :]
         # mean = np.mean(out)
         # std = np.std(out)
-        print("{} max: {}".format(ChannelToLocation[i], np.max(out)))
-        print("{} min: {}".format(ChannelToLocation[i], np.min(out)))
+        # print("{} max: {}".format(ChannelToLocation[i], np.max(out)))
+        # print("{} min: {}".format(ChannelToLocation[i], np.min(out)))
         heatmap = np.array(255*(out/o_max), dtype=np.uint8)
 
         if i == 0:
-            heats_u -= heatmap/255/np.sqrt(2)
-            heats_v += heatmap/255/np.sqrt(2)
+            heats_u -= heatmap/(255 * np.sqrt(2))
+            heats_v += heatmap/(255 * np.sqrt(2))
         elif i == 1:
             heats_v += heatmap/255
         elif i == 2:
-            heats_u += heatmap/255/np.sqrt(2)
-            heats_v += heatmap/255/np.sqrt(2)
+            heats_u += heatmap/(255 * np.sqrt(2))
+            heats_v += heatmap/(255 * np.sqrt(2))
         elif i == 3:
             heats_u -= heatmap/255
         elif i == 5:
             heats_u += heatmap/255
         elif i == 6:
-            heats_u -= heatmap/255/np.sqrt(2)
-            heats_v -= heatmap/255/np.sqrt(2)
+            heats_u -= heatmap/(255 * np.sqrt(2))
+            heats_v -= heatmap/(255 * np.sqrt(2))
         elif i == 7:
             heats_v -= heatmap/255
         elif i == 8:
-            heats_u += heatmap/255/np.sqrt(2)
-            heats_v -= heatmap/255/np.sqrt(2)
+            heats_u += heatmap/(255 * np.sqrt(2))
+            heats_v -= heatmap/(255 * np.sqrt(2))
 
     x, y = heats_u.shape[0], heats_u.shape[1]
     imX = np.zeros_like(heats_u)
@@ -136,4 +136,27 @@ def output_to_img(output):
     for i in range(x):
         imY[i, :] = np.linspace(0, y, y)
 
-    return (imY, imX, heats_u, heats_v)
+    v_leng = np.sqrt(heats_u * heats_u + heats_v * heats_v)
+    v_leng_true = v_leng > 0
+    imX = imX[v_leng_true]
+    imY = imY[v_leng_true]
+    # heats_u_cut = heats_u[v_leng_true] / v_leng[v_leng_true]
+    # heats_v_cut = heats_v[v_leng_true] / v_leng[v_leng_true]
+    heats_u_cut = heats_u[v_leng_true]
+    heats_v_cut = heats_v[v_leng_true]
+    # cut_lengs = np.sqrt(heats_u_cut * heats_u_cut + heats_v_cut * heats_v_cut)
+    # heats_u_cut = heats_u_cut / cut_lengs
+    # heats_v_cut = heats_v_cut / cut_lengs
+
+    return (imY, imX, heats_u_cut, heats_v_cut)
+
+
+def tm_output_to_dense(output):
+    output_sum = np.zeros_like(output[:, :, 0])
+    for i in range(9):
+        output_sum += output[:, :, i]
+
+    temp_max = np.max(output_sum)
+    output_sum /= temp_max
+
+    return output_sum

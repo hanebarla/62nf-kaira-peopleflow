@@ -1,5 +1,5 @@
 from src.model import CANNet2s
-from src.utils import fix_model_state_dict
+from src.utils import fix_model_state_dict, NormalizeQuiver, tm_output_to_dense
 
 import IPython
 import cv2
@@ -49,34 +49,16 @@ def run(img_str):
 
     with torch.no_grad():
         pred = model(prev_img, img)
-        mask_boundry = torch.zeros(pred.shape[2:])
-        mask_boundry[0, :] = 1.0
-        mask_boundry[-1, :] = 1.0
-        mask_boundry[:, 0] = 1.0
-        mask_boundry[:, -1] = 1.0
-        density = F.pad(pred[0, 0, 1:, 1:], (0, 1, 0, 1)) + \
-            F.pad(pred[0, 1, 1:, :], (0, 0, 0, 1)) + F.pad(pred[0, 2, 1:, :-1], (1, 0, 0, 1)) + \
-            F.pad(pred[0, 3, :, 1:], (0, 1, 0, 0)) + pred[0, 4, :, :] + \
-            F.pad(pred[0, 5, :, :-1], (1, 0, 0, 0)) + F.pad(pred[0, 6, :-1, 1:], (0, 1, 1, 0)) + \
-            F.pad(pred[0, 7, :-1, :], (0, 0, 1, 0)) + F.pad(pred[0, 8, :-1, :-1], (1, 0, 1, 0)) + \
-            pred[0, 9, :, :] * mask_boundry
 
-    dense_num = density.to('cpu').detach().numpy().copy()
-    dense = cv2.resize(dense_num, (640, 360), interpolation=cv2.INTER_CUBIC) / 64.0
-    dense *= 255.0
-    cmdense = cm.jet(dense)[:, :, 0:3]
-    plot_img = cmdense
+    pred_num = pred[0, :, :, :].detach().cpu().numpy()
+    pred_quiver = NormalizeQuiver(pred_num)
+    pred_num = pred_num.transpose((1, 2, 0))
+    pred_dense = tm_output_to_dense(pred_num)
 
-    plot_img[:, :, 0] = cmdense[:, :, 2]
-    plot_img[:, :, 2] = cmdense[:, :, 0]
-    plot_img *= 255
-
-    # plot_img = np.pad(re_decimg, (h-re_decimg.shape[0], w-re_decimg.shape[1]), 'constant')
-
-    # fig, ax = plt.subplots()
+    pred_dense = np.array(pred_dense*255, np.uint8)
 
     # encode to string
-    _, encimg = cv2.imencode(".jpg", plot_img, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
+    _, encimg = cv2.imencode(".jpg", pred_dense, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
     img_str = encimg.tostring()
     img_str = "data:image/jpeg;base64," + base64.b64encode(img_str).decode('utf-8')
     return IPython.display.JSON({'img_str': img_str})
