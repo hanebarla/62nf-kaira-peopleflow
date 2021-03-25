@@ -18,7 +18,8 @@ transform = torchvision.transforms.Compose([
     torchvision.transforms.ToTensor(),
     torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 ])
-model = CANNet2s()
+
+model = CANNet2s(load_weights=True)
 checkpoint = torch.load('weights/model_best.pth.tar')
 model.load_state_dict(fix_model_state_dict(checkpoint['state_dict']))
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -48,7 +49,6 @@ def run(img_str):
 
     with torch.no_grad():
         pred = model(prev_img, img)
-        """
         mask_boundry = torch.zeros(pred.shape[2:])
         mask_boundry[0, :] = 1.0
         mask_boundry[-1, :] = 1.0
@@ -60,8 +60,7 @@ def run(img_str):
             F.pad(pred[0, 5, :, :-1], (1, 0, 0, 0)) + F.pad(pred[0, 6, :-1, 1:], (0, 1, 1, 0)) + \
             F.pad(pred[0, 7, :-1, :], (0, 0, 1, 0)) + F.pad(pred[0, 8, :-1, :-1], (1, 0, 1, 0)) + \
             pred[0, 9, :, :] * mask_boundry
-    """
-    """
+
     dense_num = density.to('cpu').detach().numpy().copy()
     dense = cv2.resize(dense_num, (640, 360), interpolation=cv2.INTER_CUBIC) / 64.0
     dense *= 255.0
@@ -71,13 +70,13 @@ def run(img_str):
     plot_img[:, :, 0] = cmdense[:, :, 2]
     plot_img[:, :, 2] = cmdense[:, :, 0]
     plot_img *= 255
-    """
+
     # plot_img = np.pad(re_decimg, (h-re_decimg.shape[0], w-re_decimg.shape[1]), 'constant')
 
     # fig, ax = plt.subplots()
 
     # encode to string
-    _, encimg = cv2.imencode(".jpg", re_decimg, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
+    _, encimg = cv2.imencode(".jpg", plot_img, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
     img_str = encimg.tostring()
     img_str = "data:image/jpeg;base64," + base64.b64encode(img_str).decode('utf-8')
     return IPython.display.JSON({'img_str': img_str})
