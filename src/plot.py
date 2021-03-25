@@ -55,7 +55,10 @@ def run(img_str):
     pred_num = pred_num.transpose((1, 2, 0))
     pred_dense = tm_output_to_dense(pred_num)
 
-    pred_dense = np.array(pred_dense*255, np.uint8)
+    pred_dense = np.array(pred_dense*(255/np.max(pred_dense)), np.uint8)
+    pred_dense = cv2.resize(pred_dense, (640, 360), interpolation=cv2.INTER_CUBIC)
+
+    input_img['first'] = input_img['second']
 
     # encode to string
     _, encimg = cv2.imencode(".jpg", pred_dense, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
