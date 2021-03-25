@@ -30,7 +30,7 @@ def use_cam(quality=0.8):
 
       const dst_canvas = document.createElement('canvas');
       dst_canvas.width  = src_canvas.width;
-      dst_canvas.height = src_canvas.height;
+      dst_canvas.height = src_canvas.height * 2;
       const dst_canvasCtx = dst_canvas.getContext('2d');
       div.appendChild(dst_canvas);
 

@@ -39,7 +39,7 @@ norm = Normalize()
 
 
 def quiver2img(qv):
-    fig = Figure(dpi=100)
+    fig = Figure(dpi=200)
     canvas = FigureCanvas(fig)
     ax = fig.subplots()
     colors = np.sqrt(qv[2]*qv[2] + qv[3]*qv[3])
@@ -60,6 +60,8 @@ def quiver2img(qv):
     canvas.draw()
     im = np.array(fig.canvas.renderer.buffer_rgba())
     im = cv2.cvtColor(im, cv2.COLOR_RGBA2BGR)
+    h, w, c = im.shape
+    im = cv2.resize(im, (640, int(640*(h/w))))
 
     return im
 
@@ -89,11 +91,14 @@ def run(img_str):
 
     pred_dense = np.array(pred_dense*(255/np.max(pred_dense)), np.uint8)
     pred_dense = cv2.resize(pred_dense, (640, 360), interpolation=cv2.INTER_CUBIC)
+    cm_dense = cv2.applyColorMap(pred_dense, cv2.COLORMAP_JET)
+
+    plot_img = np.concatenate([cm_dense, quiver_img], 0)
 
     input_img['first'] = input_img['second']
 
     # encode to string
-    _, encimg = cv2.imencode(".jpg", quiver_img, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
+    _, encimg = cv2.imencode(".jpg", plot_img, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
     img_str = encimg.tostring()
     img_str = "data:image/jpeg;base64," + base64.b64encode(img_str).decode('utf-8')
     return IPython.display.JSON({'img_str': img_str})
