@@ -1,5 +1,8 @@
+from collections import OrderedDict
 from IPython.display import display, Javascript
 from google.colab.output import eval_js
+
+import numpy as np
 
 
 def use_cam(quality=0.8):
@@ -72,3 +75,65 @@ def use_cam(quality=0.8):
     ''')
     display(js)
     data = eval_js('useCam({})'.format(quality))
+
+
+def fix_model_state_dict(state_dict):
+    new_state_dict = OrderedDict()
+    for k, v in state_dict.items():
+        name = k
+        if name.startswith('module.'):
+            name = name[7:]  # remove 'module.' of dataparallel
+        new_state_dict[name] = v
+    return new_state_dict
+
+
+ChannelToLocation = ['aboveleft', 'above', 'aboveright',
+                     'left', 'center', 'right',
+                     'belowleft', 'below', 'belowright']
+
+
+def output_to_img(output):
+    output_num = output
+
+    o_max = np.max(output_num)
+    heats_u = np.zeros_like(output_num[0, :, :])
+    heats_v = np.zeros_like(output_num[0, :, :])
+
+    for i in range(9):
+        out = output_num[i, :, :]
+        # mean = np.mean(out)
+        # std = np.std(out)
+        print("{} max: {}".format(ChannelToLocation[i], np.max(out)))
+        print("{} min: {}".format(ChannelToLocation[i], np.min(out)))
+        heatmap = np.array(255*(out/o_max), dtype=np.uint8)
+
+        if i == 0:
+            heats_u -= heatmap/255/np.sqrt(2)
+            heats_v += heatmap/255/np.sqrt(2)
+        elif i == 1:
+            heats_v += heatmap/255
+        elif i == 2:
+            heats_u += heatmap/255/np.sqrt(2)
+            heats_v += heatmap/255/np.sqrt(2)
+        elif i == 3:
+            heats_u -= heatmap/255
+        elif i == 5:
+            heats_u += heatmap/255
+        elif i == 6:
+            heats_u -= heatmap/255/np.sqrt(2)
+            heats_v -= heatmap/255/np.sqrt(2)
+        elif i == 7:
+            heats_v -= heatmap/255
+        elif i == 8:
+            heats_u += heatmap/255/np.sqrt(2)
+            heats_v -= heatmap/255/np.sqrt(2)
+
+    x, y = heats_u.shape[0], heats_u.shape[1]
+    imX = np.zeros_like(heats_u)
+    for i in range(y):
+        imX[:, i] = np.linspace(x, 0, x)
+    imY = np.zeros_like(heats_v)
+    for i in range(x):
+        imY[i, :] = np.linspace(0, y, y)
+
+    return (imY, imX, heats_u, heats_v)

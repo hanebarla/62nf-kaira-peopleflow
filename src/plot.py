@@ -1,4 +1,5 @@
 from src.model import CANNet2s
+from src.utils import fix_model_state_dict
 
 import IPython
 import cv2
@@ -10,6 +11,7 @@ import torch
 import torch.nn.functional as F
 import torchvision
 from matplotlib import cm
+import matplotlib.pyplot as plt
 
 
 transform = torchvision.transforms.Compose([
@@ -18,7 +20,7 @@ transform = torchvision.transforms.Compose([
 ])
 model = CANNet2s()
 checkpoint = torch.load('weights/model_best.pth.tar')
-model.load_state_dict(checkpoint['state_dict'])
+model.load_state_dict(fix_model_state_dict(checkpoint['state_dict']))
 
 input_img = {
     'first': torch.zeros((1, 360, 640)),
@@ -59,6 +61,8 @@ def run(img_str):
     plot_img[:, :, 0] = cmdense[:, :, 2]
     plot_img[:, :, 2] = cmdense[:, :, 0]
     plot_img *= 255
+
+    # fig, ax = plt.subplots()
 
     # encode to string
     _, encimg = cv2.imencode(".jpg", plot_img, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
