@@ -1,4 +1,4 @@
-from model import CANNet2s
+from src.model import CANNet2s
 
 import IPython
 import cv2
@@ -17,7 +17,7 @@ transform = torchvision.transforms.Compose([
     torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 ])
 model = CANNet2s()
-checkpoint = torch.load('../weights/model_best.pth.tar')
+checkpoint = torch.load('weights/model_best.pth.tar')
 model.load_state_dict(checkpoint['state_dict'])
 
 input_img = {
@@ -35,8 +35,6 @@ def run(img_str):
     h, w, c = decimg.shape
     decimg = decimg[(int(h/2)-180):(int(h/2)+180), (int(w/2)-320):(int(w/2)+320)]
     input_img['second'] = transform(decimg)
-
-    #############your process###############
 
     with torch.no_grad():
         pred = model(input_img['first'].cuda(), input_img['second'].cuda())
@@ -61,9 +59,8 @@ def run(img_str):
     plot_img[:, :, 0] = cmdense[:, :, 2]
     plot_img[:, :, 2] = cmdense[:, :, 0]
     plot_img *= 255
-    #############your process###############
 
-    #encode to string
+    # encode to string
     _, encimg = cv2.imencode(".jpg", plot_img, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
     img_str = encimg.tostring()
     img_str = "data:image/jpeg;base64," + base64.b64encode(img_str).decode('utf-8')
